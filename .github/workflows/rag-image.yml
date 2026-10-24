@@ -1,0 +1,47 @@
+name: Build RAG container
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  packages: write
+jobs:
+  image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      IMAGE_REF: ${{ secrets.RAG_IMAGE_REF }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+      - name: Test CPU grader contract and transport
+        run: |
+          python -m pip install Pillow==13.0.0 pypdf==6.21.2 python-docx==1.2.0 openpyxl==3.1.5
+          python -m unittest discover -s matches/rag/tests -v
+          python -m unittest discover -s tests -v
+      - name: Free ephemeral runner disk for ROCm and model layers
+        run: |
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+          docker system prune -af
+          df -h /
+      - name: Authenticate build registry
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          test -n "$IMAGE_REF"
+          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+      - name: Build without changing required base layers
+        run: |
+          docker build --progress=plain -f matches/rag/Dockerfile -t "$IMAGE_REF" .
+          docker image inspect "$IMAGE_REF" --format '{{.Size}}' > /tmp/image-size
+          test "$(cat /tmp/image-size)" -lt 64424509440
+          docker run --rm --entrypoint python3 "$IMAGE_REF" -c "import torch; import engine; from transformers import Qwen3VLForConditionalGeneration; assert torch.version.hip; print('ROCm build:',torch.__version__)"
+          python3 tools/verify_base_layers.py --image "$IMAGE_REF"
+      - name: Push tested build artifact
+        run: docker push "$IMAGE_REF"
+      - name: Summarize build evidence
+        run: |
+          printf 'Uncompressed image bytes: ' >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/image-size >> "$GITHUB_STEP_SUMMARY"
+          printf '\nCPU tests and ROCm import checked. GPU inference accuracy/latency still pending.\n' >> "$GITHUB_STEP_SUMMARY"

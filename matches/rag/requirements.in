@@ -1,0 +1,5 @@
+transformers==5.20.2
+Pillow==13.0.0
+pypdf
+python-docx
+openpyxl

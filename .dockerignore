@@ -1,0 +1,10 @@
+*
+!matches/
+!matches/ocr/
+!matches/ocr/app/
+!matches/ocr/app/*.py
+!matches/rag/
+!matches/rag/Dockerfile
+!matches/rag/app/
+!matches/rag/app/*.py
+!matches/rag/app/requirements.txt
