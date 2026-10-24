@@ -19,6 +19,7 @@ jobs:
         run: |
           python -m pip install Pillow==13.0.0
           python -m unittest discover -s matches/ocr/tests -v
+          python -m unittest discover -s tests -v
       - name: Free ephemeral runner disk for ROCm and model layers
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
@@ -36,9 +37,7 @@ jobs:
           docker image inspect "$IMAGE_REF" --format '{{.Size}}' > /tmp/image-size
           test "$(cat /tmp/image-size)" -lt 64424509440
           docker run --rm --entrypoint python3 "$IMAGE_REF" -c "import torch; from transformers import Qwen3VLForConditionalGeneration; assert torch.version.hip; print('ROCm build:',torch.__version__)"
-          docker image inspect "$IMAGE_REF" --format '{{json .RootFS.Layers}}' > /tmp/submission-layers
-          docker image inspect rocm/pytorch:rocm10.0_ubuntu26.04_py3.14_pytorch_release_2.13.0 --format '{{json .RootFS.Layers}}' > /tmp/base-layers
-          python3 -c "import json; a=json.load(open('/tmp/submission-layers')); b=json.load(open('/tmp/base-layers')); assert a[:len(b)]==b; print('Required base layers preserved')"
+          python3 tools/verify_base_layers.py --image "$IMAGE_REF"
       - name: Push tested build artifact
         run: docker push "$IMAGE_REF"
       - name: Summarize build evidence
