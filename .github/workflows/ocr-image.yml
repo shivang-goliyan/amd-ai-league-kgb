@@ -3,7 +3,6 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
-  packages: write
 jobs:
   image:
     runs-on: ubuntu-24.04
@@ -27,13 +26,14 @@ jobs:
           df -h /
       - name: Authenticate build registry
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REGISTRY_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+          REGISTRY_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
         run: |
           test -n "$IMAGE_REF"
-          printf '%s' "$GH_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          printf '%s' "$REGISTRY_TOKEN" | docker login docker.io -u "$REGISTRY_USER" --password-stdin
       - name: Build without changing required base layers
         run: |
-          docker build --progress=plain -t "$IMAGE_REF" matches/ocr
+          docker build --progress=plain --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" -t "$IMAGE_REF" matches/ocr
           docker image inspect "$IMAGE_REF" --format '{{.Size}}' > /tmp/image-size
           test "$(cat /tmp/image-size)" -lt 64424509440
           docker run --rm --entrypoint python3 "$IMAGE_REF" -c "import torch; from transformers import Qwen3VLForConditionalGeneration; assert torch.version.hip; print('ROCm build:',torch.__version__)"

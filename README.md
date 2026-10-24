@@ -15,3 +15,5 @@ python3 -m unittest discover -s matches/ocr/tests -v
 ```
 
 See each match directory for its invocation contract and validation limits.
+
+Build publishing uses Docker Hub. The mandated base contains a roughly 20 GB compressed layer; GitHub Container Registry has a 10 GB per-layer limit. The required AMD layers are preserved rather than flattened.
