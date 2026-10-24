@@ -23,6 +23,8 @@ A query atomically writes `/app/output/query_01_output.json` with both `answer` 
 
 The base image, model revision and dependency versions are pinned. Weights are shipped inside the image and runtime downloads are disabled. No hosted inference API is used.
 
+Image transcription must reach an end token before it is indexed. An interrupted generation gets one retry within a shared 500-second indexing budget; a second interruption skips that image instead of storing partial text.
+
 Current limits: scanned PDFs without extractable text are not OCR-rendered; formula cells are represented as formula text rather than evaluated. Citation grounding checks do not prove semantic correctness. Tests and eventual GPU measurements must be considered separately.
 
 Run unit/integration tests in an environment with pypdf, python-docx and openpyxl:

@@ -9,3 +9,4 @@ __pycache__/
 .env*
 *.safetensors
 /models/
+/POINTS-EVIDENCE.md
