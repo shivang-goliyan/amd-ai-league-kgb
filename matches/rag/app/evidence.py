@@ -1,6 +1,9 @@
 """Reject fabricated evidence and retain source files supporting the selected value."""
 import re
-from retrieval import identifiers,tokens
+if __package__:
+    from .retrieval import identifiers,tokens
+else:
+    from retrieval import identifiers,tokens
 
 REFUSAL={'answer':'','citations':[],'confidence':0.0}
 
