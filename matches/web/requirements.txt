@@ -1,0 +1,6 @@
+beautifulsoup4==4.15.0
+    # via -r league/matches/web/requirements.in
+soupsieve==3.0.4
+    # via beautifulsoup4
+typing-extensions==4.16.0
+    # via beautifulsoup4
