@@ -68,4 +68,22 @@ class AgentTests(unittest.IsolatedAsyncioTestCase):
         result=await agent.WebAgent(fetch,decide,search=search).retrieve('How many months is the warranty?')
         self.assertEqual(result['answer'],'37')
 
+    async def test_unread_link_cited_by_the_model_is_fetched_before_answering(self):
+        fetched=[]
+        async def fetch(url,timeout):
+            fetched.append(url)
+            return {'url':url,'html':'<a href="/cases/CASE-72">CASE-72 fix record</a>' if len(fetched)==1 else '<p>CASE-72 fixed in release 5.8.2</p>'}
+        async def decide(q,pages,remaining):
+            if len(pages)==1:return {'answer':'CASE-72','evidence':[{'file':'https://demo.test/cases/CASE-72','quote':'CASE-72 fix record'}]}
+            return {'answer':'5.8.2','evidence':[{'file':'https://demo.test/cases/CASE-72','quote':'CASE-72 fixed in release 5.8.2'}]}
+        result=await agent.WebAgent(fetch,decide).retrieve('Which release fixed CASE-72?',['https://demo.test/'])
+        self.assertEqual(result['answer'],'5.8.2');self.assertEqual(len(fetched),2)
+
+    async def test_an_unlinked_citation_is_not_a_navigation_permission(self):
+        fetched=[]
+        async def fetch(url,timeout):fetched.append(url);return {'url':url,'html':'<p>Home</p>'}
+        async def decide(q,p,r):return {'answer':'999','evidence':[{'file':'https://unseen.test/record','quote':'Price: 999'}]}
+        result=await agent.WebAgent(fetch,decide).retrieve('Price?',['https://demo.test/'])
+        self.assertEqual(result['answer'],'');self.assertEqual(fetched,['https://demo.test/'])
+
 if __name__=='__main__':unittest.main()

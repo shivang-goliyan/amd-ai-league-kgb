@@ -38,11 +38,19 @@ class WebAgent:
                         allowed.update(link['url'] for link in page['links']);self.trace.append({'action':'read','url':final})
                     except (OSError,ValueError,KeyError):continue
                     proposal=await self.decide(query,pages,remaining())
+                    suggestions=[]
+                    if isinstance(proposal,dict):
+                        suggestions.append(proposal.get('open_url'))
+                        evidence=proposal.get('evidence')
+                        if isinstance(evidence,list):suggestions.extend(x.get('file') for x in evidence if isinstance(x,dict))
+                    candidate=None
+                    for suggestion in suggestions:
+                        if not isinstance(suggestion,str):continue
+                        target=_http_url(urljoin(page['url'],suggestion))
+                        if target in allowed and target not in seen:candidate=target;break
+                    if candidate:
+                        frontier.appendleft(candidate);continue
                     result=verify(proposal,[{'file':p['url'],'text':p['text']} for p in pages],query)
                     if result['answer']:return result
-                    candidate=proposal.get('open_url') if isinstance(proposal,dict) else None
-                    if candidate:
-                        candidate=_http_url(urljoin(page['url'],candidate))
-                        if candidate in allowed and candidate not in seen:frontier.appendleft(candidate)
         except TimeoutError:self.trace.append({'action':'deadline'})
         return REFUSAL.copy()
