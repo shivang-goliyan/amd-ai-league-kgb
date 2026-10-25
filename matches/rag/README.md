@@ -1,6 +1,6 @@
 # Match 3: grounded multi-format document QA
 
-Work in progress; no private-evaluation score is claimed. The corpus, retrieval, evidence and client tests pass on CPU. The resident Qwen3-VL model and full container require authorized AMD GPU validation.
+The native Radeon GPU evaluation passed all ten public sample questions, including exact citation sets. CPU behavioral tests and the container build pass. Mandatory-container/Instinct validation and private grading remain pending; see [validation details](../../VALIDATION.md).
 
 ## Grader contract
 

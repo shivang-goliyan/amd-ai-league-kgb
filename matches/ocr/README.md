@@ -1,6 +1,6 @@
 # Match 2: resident vision-language OCR
 
-Work in progress. Not yet submitted or validated on the hackathon AMD GPU pool.
+Native Radeon GPU evaluation passed 10 public illustrations and 32 synthetic stress cases. Submission and mandatory-container/Instinct validation remain pending; see [validation details](../../VALIDATION.md).
 
 Uses the Apache-2.0 Qwen3-VL-8B-Instruct model, pinned to a specific model revision. The model remains in a single ROCm process while fresh grader calls use a lightweight Unix-socket client. No third-party inference API is called. The required ROCm base layers are retained and model weights are downloaded during the image build.
 
