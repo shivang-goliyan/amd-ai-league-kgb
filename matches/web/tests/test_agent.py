@@ -86,4 +86,17 @@ class AgentTests(unittest.IsolatedAsyncioTestCase):
         result=await agent.WebAgent(fetch,decide).retrieve('Price?',['https://demo.test/'])
         self.assertEqual(result['answer'],'');self.assertEqual(fetched,['https://demo.test/'])
 
+    async def test_mapping_evidence_survives_navigation_to_the_lookup_result(self):
+        async def fetch(url,timeout):
+            return {'url':url,'html':'<p>Orion device fault: CASE-72</p><a href="/case">Fix record</a>' if url.endswith('/') else '<p>CASE-72 fixed in release 5.8.2</p>'}
+        async def decide(q,pages,remaining):
+            if len(pages)==1:
+                return {'answer':'CASE-72','evidence':[{'file':'https://demo.test/','quote':'Orion device fault: CASE-72','role':'bridge'},{'file':'https://demo.test/case','quote':'Fix record','role':'answer'}]}
+            return {'answer':'5.8.2','evidence':[{'file':'https://demo.test/case','quote':'CASE-72 fixed in release 5.8.2','role':'answer'}]}
+        result=await agent.WebAgent(fetch,decide).retrieve('Which release fixed the Orion device fault?',['https://demo.test/'])
+        self.assertEqual(result['answer'],'5.8.2');self.assertEqual(set(result['citations']),{'https://demo.test/','https://demo.test/case'})
+
+        direct=await agent.WebAgent(fetch,decide).retrieve('Which release fixed CASE-72?',['https://demo.test/'])
+        self.assertEqual(direct['citations'],['https://demo.test/case'])
+
 if __name__=='__main__':unittest.main()

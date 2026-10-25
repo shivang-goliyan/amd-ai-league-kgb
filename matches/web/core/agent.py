@@ -25,7 +25,7 @@ class WebAgent:
             async with asyncio.timeout(self.timeout):
                 seeds=list(start_urls or [])
                 if not seeds and self.search:seeds=await self.search(query,remaining())
-                frontier=deque(x for u in seeds[:self.max_pages] if (x:=_http_url(u)));seen=set();pages=[];allowed=set(frontier);attempts=0
+                frontier=deque(x for u in seeds[:self.max_pages] if (x:=_http_url(u)));seen=set();pages=[];allowed=set(frontier);attempts=0;bridge_memory=[]
                 while frontier and attempts<self.max_pages:
                     url=frontier.popleft()
                     if url in seen:continue
@@ -42,7 +42,15 @@ class WebAgent:
                     if isinstance(proposal,dict):
                         suggestions.append(proposal.get('open_url'))
                         evidence=proposal.get('evidence')
-                        if isinstance(evidence,list):suggestions.extend(x.get('file') for x in evidence if isinstance(x,dict))
+                        if isinstance(evidence,list):
+                            suggestions.extend(x.get('file') for x in evidence if isinstance(x,dict))
+                            known={p['url']:p['text'] for p in pages}
+                            for item in evidence:
+                                if not isinstance(item,dict) or item.get('role')!='bridge':continue
+                                file=item.get('file');quote=item.get('quote')
+                                if isinstance(file,str) and file in known and isinstance(quote,str) and quote and quote in known[file]:
+                                    remembered={'file':file,'quote':quote,'role':'bridge'}
+                                    if remembered not in bridge_memory:bridge_memory.append(remembered)
                     candidate=None
                     for suggestion in suggestions:
                         if not isinstance(suggestion,str):continue
@@ -50,6 +58,9 @@ class WebAgent:
                         if target in allowed and target not in seen:candidate=target;break
                     if candidate:
                         frontier.appendleft(candidate);continue
+                    if isinstance(proposal,dict) and isinstance(proposal.get('evidence'),list) and bridge_memory:
+                        proposal=dict(proposal);proposal['evidence']=list(proposal['evidence'])
+                        proposal['evidence'].extend(x for x in bridge_memory if x not in proposal['evidence'])
                     result=verify(proposal,[{'file':p['url'],'text':p['text']} for p in pages],query)
                     if result['answer']:return result
         except TimeoutError:self.trace.append({'action':'deadline'})
