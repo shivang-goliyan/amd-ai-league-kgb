@@ -1,6 +1,6 @@
 # Match 3: grounded multi-format document QA
 
-The native Radeon GPU evaluation passed all ten public sample questions, including exact citation sets. CPU behavioral tests and the container build pass. Mandatory-container/Instinct validation and private grading remain pending; see [validation details](../../VALIDATION.md).
+The native Radeon GPU evaluation passed all ten public sample questions, including exact citation sets. CPU behavioral tests and the container build pass. Submitted for grading; mandatory-container/Instinct verification and private results remain pending; see [validation details](../../VALIDATION.md).
 
 ## Grader contract
 
