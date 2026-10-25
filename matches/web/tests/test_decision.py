@@ -24,7 +24,7 @@ class DecisionTests(unittest.IsolatedAsyncioTestCase):
         async def fetch(url,timeout):return {'url':url,'html':'<a href="/contact">Contact</a>' if url.endswith('/') else '<p>Warranty: 37 months</p>'}
         result=await WebAgent(fetch,ModelDecision(generate)).retrieve('Warranty term?',['https://demo.test/'])
         self.assertEqual(result['answer'],'37 months');self.assertEqual(result['citations'],['https://demo.test/contact'])
-        self.assertEqual(len(calls),2);self.assertTrue(all(k['seconds']<=8 for _,k in calls))
+        self.assertEqual(len(calls),2);self.assertTrue(all(k['seconds']<=12 for _,k in calls))
 
     async def test_late_relevant_evidence_survives_prompt_size_limits(self):
         captured=[]
@@ -39,6 +39,23 @@ class DecisionTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_incomplete_model_json_does_not_become_an_action(self):
         self.assertEqual(await ModelDecision(lambda *a,**k:'{"open_url":')('Question?',[],10),{})
+
+    async def test_navigation_does_not_return_an_intermediate_lookup_key_as_the_answer(self):
+        proposal={'answer':'CASE-72','evidence':[],'open_url':'https://demo.test/cases/CASE-72'}
+        result=await ModelDecision(lambda *a,**k:json.dumps(proposal))('Which release fixed the fault?',[],20)
+        self.assertEqual(result,{'open_url':'https://demo.test/cases/CASE-72'})
+
+    async def test_available_budget_allows_the_final_evidence_object_to_finish(self):
+        def generate(messages,**kwargs):
+            if kwargs['seconds']<10:return '{"evidence":['
+            return '{"evidence":[],"answer":"complete"}'
+        self.assertEqual((await ModelDecision(generate)('Question?',[],20))['answer'],'complete')
+
+    async def test_generation_keeps_time_for_the_total_agent_deadline(self):
+        budgets=[]
+        def generate(messages,**kwargs):budgets.append(kwargs['seconds']);return '{}'
+        await ModelDecision(generate)('Question?',[],3)
+        self.assertEqual(budgets,[2])
 
 
 if __name__=='__main__':unittest.main()
