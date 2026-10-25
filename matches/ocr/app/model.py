@@ -1,6 +1,6 @@
 """Qwen3-VL transcription on an AMD GPU. No remote inference endpoints."""
 import os
-from contract import clean_text, load_image
+from contract import clean_text, load_image, prepare_for_ocr
 
 PROMPT='''Transcribe the text in this image. Return ONLY the requested visible text, without explanations, JSON, labels, or quotation marks.
 If it is a vehicle license plate, return the registration number only. Omit jurisdiction banners and decorative slogans printed around the number. A Chinese province character and its following letter ARE part of the registration and must be kept.
@@ -25,6 +25,7 @@ class Recognizer:
         return self.transcribe(image)
 
     def transcribe(self,image):
+        image=prepare_for_ocr(image)
         messages=[{'role':'user','content':[{'type':'image','image':image},{'type':'text','text':PROMPT}]}]
         inputs=self.processor.apply_chat_template(messages,tokenize=True,add_generation_prompt=True,return_dict=True,return_tensors='pt').to('cuda')
         inputs.pop('token_type_ids',None)

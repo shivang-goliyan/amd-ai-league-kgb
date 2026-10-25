@@ -57,4 +57,23 @@ class ContractTests(unittest.TestCase):
             p=Path(d)/'a.tiff';Image.new('I;16',(10,10),65535).save(p)
             image=contract.load_image(p);self.assertEqual(image.mode,'RGB');self.assertEqual(image.getpixel((0,0)),(255,255,255))
 
+    def test_varied_source_aspect_ratios_use_one_gpu_image_shape(self):
+        for size in [(1500,300),(300,1500),(23,15),(2048,2048)]:
+            image=contract.prepare_for_ocr(Image.new('RGB',size,'white'))
+            self.assertEqual(image.size,(1024,1024));self.assertEqual(image.mode,'RGB')
+
+    def test_letterboxing_enlarges_small_images_without_stretching_their_content(self):
+        image=Image.new('RGB',(4,2),'red')
+        for x in [2,3]:
+            for y in [0,1]:image.putpixel((x,y),(0,0,255))
+        result=contract.prepare_for_ocr(image)
+        self.assertEqual(result.getpixel((100,255)),(255,255,255))
+        red=result.getpixel((100,300));blue=result.getpixel((900,700))
+        self.assertGreater(red[0],240);self.assertLess(red[2],15)
+        self.assertGreater(blue[2],240);self.assertLess(blue[0],15)
+        self.assertEqual(result.getpixel((900,768)),(255,255,255))
+
+    def test_empty_images_are_rejected_before_gpu_preprocessing(self):
+        with self.assertRaises(ValueError):contract.prepare_for_ocr(Image.new('RGB',(0,4)))
+
 if __name__=='__main__': unittest.main()

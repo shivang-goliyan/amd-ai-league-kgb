@@ -37,6 +37,7 @@ jobs:
           docker image inspect "$IMAGE_REF" --format '{{.Size}}' > /tmp/image-size
           test "$(cat /tmp/image-size)" -lt 64424509440
           docker run --rm --entrypoint python3 "$IMAGE_REF" -c "import torch; from transformers import Qwen3VLForConditionalGeneration; assert torch.version.hip; print('ROCm build:',torch.__version__)"
+          docker run --rm --network none -e PYTHONPATH=/app -v "$GITHUB_WORKSPACE/matches/ocr/processor_check.py:/tmp/processor_check.py:ro" --entrypoint python3 "$IMAGE_REF" /tmp/processor_check.py
           python3 tools/verify_base_layers.py --image "$IMAGE_REF"
       - name: Push tested build artifact
         run: docker push "$IMAGE_REF"
@@ -44,4 +45,4 @@ jobs:
         run: |
           printf 'Uncompressed image bytes: ' >> "$GITHUB_STEP_SUMMARY"
           cat /tmp/image-size >> "$GITHUB_STEP_SUMMARY"
-          printf '\nCPU tests and ROCm import checked. GPU inference accuracy/latency still pending.\n' >> "$GITHUB_STEP_SUMMARY"
+          printf '\nCPU tests, ROCm import and offline tokenizer/vision processor checked. Native Radeon GPU results are separate from container/Instinct validation.\n' >> "$GITHUB_STEP_SUMMARY"

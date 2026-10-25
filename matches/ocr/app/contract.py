@@ -30,6 +30,17 @@ def load_image(path, max_edge=1600):
     return image
 
 
+def prepare_for_ocr(image):
+    """Use one warmed GPU image shape while preserving the source aspect ratio."""
+    if min(image.size)<=0:raise ValueError('Image dimensions must be positive')
+    scale=1024/max(image.size)
+    size=tuple(max(1,round(n*scale)) for n in image.size)
+    resized=image.convert('RGB').resize(size,Image.Resampling.LANCZOS)
+    canvas=Image.new('RGB',(1024,1024),'white')
+    canvas.paste(resized,((1024-size[0])//2,(1024-size[1])//2))
+    return canvas
+
+
 def write_answer(input_image, answer, output_dir=Path('/app/output')):
     output_dir=Path(output_dir);output_dir.mkdir(parents=True,exist_ok=True)
     result={'text':clean_text(answer.get('text',''))}

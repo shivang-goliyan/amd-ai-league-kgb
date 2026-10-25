@@ -10,7 +10,7 @@ The grader calls:
 python3 /app/app.py --input-image /app/input/image_01.png
 ```
 
-The client atomically writes `/app/output/image_01_output.json` with the recognized text. PNG, JPEG and TIFF decoding, EXIF orientation, transparency and 16-bit integer TIFF normalization are supported. Input image edges are bounded before inference.
+The client atomically writes `/app/output/image_01_output.json` with the recognized text. PNG, JPEG and TIFF decoding, EXIF orientation, transparency and 16-bit integer TIFF normalization are supported. Images are resized with their aspect ratio preserved and centered on a white 1024-square canvas. The startup warmup uses the same shape, avoiding first-use GPU delays for each source aspect ratio.
 
 The transcription prompt preserves Chinese province prefixes, omits banners surrounding US plate registrations, joins sign lines in reading order, and does not add units. Deterministic cleanup removes formatting wrappers; it never substitutes an identifier based on a sample answer.
 
